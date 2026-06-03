@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Save, Loader2, Globe, User, Link2, Shield, Database, Sparkles, PlugZap } from "lucide-react";
+import { Save, Loader2, Globe, User, Link2, Shield, Database, Sparkles, PlugZap, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import {
     StorageTab,
     AiConfigTab,
     McpConfigTab,
+    SecurityTab,
 } from "./settings-tabs";
 
 export default function SettingsPage() {

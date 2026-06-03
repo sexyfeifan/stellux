@@ -599,3 +599,114 @@ export function McpConfigTab() {
         </Card>
     );
 }
+
+
+export function SecurityTab() {
+    const [oldPassword, setOldPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [isChanging, setIsChanging] = useState(false);
+
+    const handleChangePassword = async () => {
+        if (!oldPassword || !newPassword) {
+            toast.error("请填写完整信息");
+            return;
+        }
+        if (newPassword.length < 6) {
+            toast.error("新密码至少 6 个字符");
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            toast.error("两次输入的新密码不一致");
+            return;
+        }
+        if (oldPassword === newPassword) {
+            toast.error("新密码不能与旧密码相同");
+            return;
+        }
+
+        setIsChanging(true);
+        try {
+            const res = await fetch("/api/v1/admin/auth/change-password", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+                },
+                body: JSON.stringify({
+                    old_password: oldPassword,
+                    new_password: newPassword,
+                }),
+            });
+            const data = await res.json();
+            if (data.code === 0) {
+                toast.success("密码修改成功，请重新登录");
+                setOldPassword("");
+                setNewPassword("");
+                setConfirmPassword("");
+                localStorage.removeItem("access_token");
+                localStorage.removeItem("refresh_token");
+                setTimeout(() => {
+                    window.location.href = "/admin/login";
+                }, 1500);
+            } else {
+                toast.error(data.message || "修改失败");
+            }
+        } catch {
+            toast.error("网络错误，请重试");
+        } finally {
+            setIsChanging(false);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>修改密码</CardTitle>
+                <CardDescription>修改管理员登录密码，修改后需要重新登录</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 max-w-md">
+                <div className="space-y-2">
+                    <Label htmlFor="old_password">当前密码</Label>
+                    <Input
+                        id="old_password"
+                        type="password"
+                        value={oldPassword}
+                        onChange={(e) => setOldPassword(e.target.value)}
+                        placeholder="请输入当前密码"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="new_password">新密码</Label>
+                    <Input
+                        id="new_password"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="至少 6 个字符"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="confirm_password">确认新密码</Label>
+                    <Input
+                        id="confirm_password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="再次输入新密码"
+                    />
+                </div>
+                <Button onClick={handleChangePassword} disabled={isChanging}>
+                    {isChanging ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            修改中...
+                        </>
+                    ) : (
+                        "修改密码"
+                    )}
+                </Button>
+            </CardContent>
+        </Card>
+    );
+}
