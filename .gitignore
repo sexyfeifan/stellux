@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+target/
+
+# Build outputs
+.next/
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temp files
+*.tmp
+*.temp
+
+# Local database dumps / one-off migration exports
+/*.sql
+/blog_data.json
+sql/

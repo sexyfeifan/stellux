@@ -1,0 +1,10 @@
+**/.git
+**/.next
+**/node_modules
+**/target
+**/.env
+**/.env.*
+**/docker-compose*.yml
+**/*.md
+**/.github
+**/flutter
