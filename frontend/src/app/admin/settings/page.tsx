@@ -131,6 +131,10 @@ export default function SettingsPage() {
                         <PlugZap className="h-4 w-4" />
                         MCP配置
                     </TabsTrigger>
+                    <TabsTrigger value="security" className="gap-2">
+                        <Lock className="h-4 w-4" />
+                        安全
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="site">
@@ -153,6 +157,9 @@ export default function SettingsPage() {
                 </TabsContent>
                 <TabsContent value="mcp">
                     <McpConfigTab />
+                </TabsContent>
+                <TabsContent value="security">
+                    <SecurityTab />
                 </TabsContent>
             </Tabs>
         </div>
