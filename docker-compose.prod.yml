@@ -79,7 +79,7 @@ services:
           memory: 256M
 
   backend:
-    image: ${BACKEND_IMAGE:-ghcr.io/sexyfeifan/stellux-backend:latest}
+    image: ${BACKEND_IMAGE:-sexyfeifan/stellux-backend:latest}
     build:
       extra_hosts:
         - "host.docker.internal:host-gateway"
@@ -133,7 +133,7 @@ services:
           memory: 64M
 
   frontend:
-    image: ${FRONTEND_IMAGE:-ghcr.io/sexyfeifan/stellux-frontend:latest}
+    image: ${FRONTEND_IMAGE:-sexyfeifan/stellux-frontend:latest}
     build:
       extra_hosts:
         - "host.docker.internal:host-gateway"
