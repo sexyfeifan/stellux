@@ -146,3 +146,36 @@ pub async fn setup_admin(
 
     Ok(Json(ApiResponse::success(response)))
 }
+
+/// POST /api/v1/auth/change-password
+///
+/// Change password for the authenticated user
+
+/// POST /api/v1/admin/auth/change-password
+pub async fn change_password(
+    State(state): State<AppState>,
+    auth_user: crate::middleware::auth::AuthUser,
+    Json(req): Json<crate::models::user::ChangePasswordRequest>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    if req.new_password.len() < 6 {
+        return Err(ApiError::ValidationError(
+            "New password must be at least 6 characters".to_string(),
+        ));
+    }
+
+    let user = UserRepository::find_by_id(&state.db, auth_user.user_id)
+        .await?
+        .ok_or_else(|| ApiError::Unauthorized("User not found".to_string()))?;
+
+    let is_valid = UserRepository::verify_password(&req.old_password, &user.password_hash)?;
+    if !is_valid {
+        return Err(ApiError::Unauthorized(
+            "Old password is incorrect".to_string(),
+        ));
+    }
+
+    UserRepository::update_password(&state.db, user.id, &req.new_password).await?;
+
+    tracing::info!("User '{}' changed password", user.username);
+    Ok(Json(ApiResponse::success(())))
+}

@@ -87,6 +87,8 @@ pub fn create_admin_routes(state: AppState) -> Router<AppState> {
         .merge(ai::admin_routes())
         // MCP admin routes
         .merge(mcp::admin_routes())
+        // Auth admin routes
+        .merge(auth::admin_routes())
         // Other admin routes will be added here as features are implemented
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }

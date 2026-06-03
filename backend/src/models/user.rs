@@ -82,3 +82,10 @@ pub struct CreateUserRequest {
     pub nickname: Option<String>,
     pub avatar: Option<String>,
 }
+
+/// Change password request DTO
+#[derive(Debug, Deserialize)]
+pub struct ChangePasswordRequest {
+    pub old_password: String,
+    pub new_password: String,
+}
