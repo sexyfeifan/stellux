@@ -43,24 +43,28 @@
                         ┌──────────────────┐
                         │   客户端浏览器     │
                         └────────┬─────────┘
+                                 │ :3000
+                                 ▼
+                        ┌──────────────────┐
+                        │  Stellux 前端     │
+                        │  (Next.js)       │─── SSR ──┐
+                        │  代理 /api/v1/*  │          │
+                        └────────┬─────────┘          │
+                                 │ rewrites           │
+                                 ▼                    ▼
+                        ┌─────────────────────────────────┐
+                        │        Stellux 后端              │
+                        │        (Rust/Axum) :8080        │
+                        └────────┬────────────────────────┘
                                  │
-                  ┌──────────────┴──────────────┐
-                  │                              │
-                  ▼                              ▼
-        ┌─────────────────┐            ┌─────────────────┐
-        │  Stellux 前端    │            │  Stellux 后端    │
-        │  (Next.js)      │─── SSR ──▶ │  (Rust/Axum)    │
-        │  :3000          │            │  :8088          │
-        └─────────────────┘            └────────┬────────┘
-                                                │
-                           ┌────────────────────┼────────────────────┐
-                           │                    │                    │
-                           ▼                    ▼                    ▼
-                  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-                  │  PostgreSQL   │    │    Redis      │    │   RustFS     │
-                  │  (数据库)     │    │   (缓存)      │    │  (文件存储)  │
-                  │  :5432       │    │   :6379       │    │  :9000/9001  │
-                  └──────────────┘    └──────────────┘    └──────────────┘
+                ┌────────────────┼────────────────┐
+                │                │                │
+                ▼                ▼                ▼
+       ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+       │  PostgreSQL   │ │    Redis      │ │   RustFS     │
+       │  (数据库)     │ │   (缓存)      │ │  (文件存储)  │
+       │  :5432       │ │   :6379       │ │  :9000/9001  │
+       └──────────────┘ └──────────────┘ └──────────────┘
 ```
 
 ## 📦 技术栈
@@ -71,7 +75,7 @@
 | **前端** | Next.js 15, React 19, TypeScript 5, TailwindCSS 4, Shadcn UI, Zustand |
 | **移动端** | Flutter, Dart, Riverpod, GoRouter |
 | **数据库** | PostgreSQL 15, Redis 7, RustFS (S3 兼容) |
-| **部署** | Docker, Docker Compose, GitHub Actions, GHCR |
+| **部署** | Docker, Docker Compose, GitHub Actions, Docker Hub |
 
 ---
 
@@ -84,11 +88,12 @@ curl -fsSL https://raw.githubusercontent.com/sexyfeifan/stellux/main/deploy.sh |
 ```
 
 脚本会自动：
-- ✅ 检测 Docker 环境
-- ✅ 生成 `.env` 配置文件（交互式填写关键参数）
+- ✅ 检测并安装 Docker 环境
+- ✅ 生成 `.env` 配置文件（随机密码）
 - ✅ 拉取预构建镜像
-- ✅ 启动所有服务
-- ✅ 输出访问地址
+- ✅ 启动全部 5 个服务（前端、后端、PostgreSQL、Redis、RustFS）
+- ✅ 自动创建管理员账号
+- ✅ 输出访问地址和登录信息
 
 ### 方式二：Docker Compose 安装
 
@@ -99,68 +104,30 @@ cd stellux
 
 # 2. 配置环境变量
 cp .env.example .env
-
-# 编辑 .env，必须修改以下项：
-#   POSTGRES_PASSWORD=你的数据库密码
-#   JWT_SECRET=你的JWT密钥(至少32字符)
-#   RUSTFS_SECRET_KEY=你的存储密钥
-#   NEXT_PUBLIC_API_URL=http://你的服务器IP:8088/api/v1
+# 编辑 .env 修改密码等配置
 
 # 3. 启动服务
 docker compose -f docker-compose.prod.yml up -d
 
-# 4. 查看状态
-docker compose -f docker-compose.prod.yml ps
+# 4. 创建管理员（首次部署）
+curl -X POST http://localhost:8080/api/v1/auth/setup \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"your-password"}'
 ```
 
-### 方式三：手动逐个启动
+---
 
-```bash
-# 启动数据库
-docker run -d --name stellux-postgres \
-  -e POSTGRES_DB=stellux \
-  -e POSTGRES_USER=stellux \
-  -e POSTGRES_PASSWORD=your-password \
-  -v stellux_pgdata:/var/lib/postgresql/data \
-  -p 5432:5432 \
-  postgres:15-alpine
+## 🔑 默认管理员账号
 
-# 启动缓存
-docker run -d --name stellux-redis \
-  -v stellux_redis:/data \
-  redis:7-alpine redis-server --appendonly yes
+| 项目 | 值 |
+|------|-----|
+| **用户名** | `admin` |
+| **密码** | `admin123` |
+| **登录地址** | `http://你的服务器IP:3000/admin/login` |
 
-# 启动文件存储
-docker run -d --name stellux-rustfs \
-  -e RUSTFS_ACCESS_KEY=stellux \
-  -e RUSTFS_SECRET_KEY=your-secret \
-  -v stellux_rustfs:/data \
-  -p 9100:9000 -p 9101:9001 \
-  rustfs/rustfs:latest
+> ⚠️ **安全提示**：首次登录后请立即修改默认密码！
 
-# 启动后端
-docker run -d --name stellux-backend \
-  -e DATABASE_URL=postgres://stellux:your-password@host.docker.internal:5432/stellux \
-  -e REDIS_URL=redis://host.docker.internal:6379 \
-  -e JWT_SECRET=your-jwt-secret \
-  -e SERVER_PORT=8088 \
-  --add-host=host.docker.internal:host-gateway \
-  -p 8088:8088 \
-  ghcr.io/sexyfeifan/stellux-backend:latest
-
-# 启动前端
-docker run -d --name stellux-frontend \
-  -e INTERNAL_API_URL=http://host.docker.internal:8088/api/v1 \
-  -e NEXT_PUBLIC_API_URL=http://你的IP:8088/api/v1 \
-  -p 3000:3000 \
-  ghcr.io/sexyfeifan/stellux-frontend:latest
-```
-
-### 首次使用
-
-1. 访问 `http://你的IP:3000/admin/login`
-2. 首次访问自动进入初始化页面，创建管理员账号
-3. 登录后即可开始写文章 🎉
+---
 
 ## 🐳 Docker 镜像
 
@@ -168,11 +135,18 @@ docker run -d --name stellux-frontend \
 
 ```bash
 # 后端
-docker pull ghcr.io/sexyfeifan/stellux-backend:latest
+docker pull sexyfeifan/stellux-backend:latest
 
 # 前端
-docker pull ghcr.io/sexyfeifan/stellux-frontend:latest
+docker pull sexyfeifan/stellux-frontend:latest
 ```
+
+| 镜像 | Docker Hub |
+|------|------------|
+| 后端 | [sexyfeifan/stellux-backend](https://hub.docker.com/r/sexyfeifan/stellux-backend) |
+| 前端 | [sexyfeifan/stellux-frontend](https://hub.docker.com/r/sexyfeifan/stellux-frontend) |
+
+---
 
 ## ⚙️ 环境变量
 
@@ -181,10 +155,12 @@ docker pull ghcr.io/sexyfeifan/stellux-frontend:latest
 | `POSTGRES_PASSWORD` | ✅ | 数据库密码 | - |
 | `JWT_SECRET` | ✅ | JWT 密钥（≥32 字符） | - |
 | `RUSTFS_SECRET_KEY` | ✅ | 文件存储密钥 | - |
-| `NEXT_PUBLIC_API_URL` | ✅ | 浏览器访问后端 API 地址 | `http://localhost:8088/api/v1` |
-| `BACKEND_PORT` | | 后端外部端口 | `8088` |
+| `NEXT_PUBLIC_API_URL` | | 前端 API 地址（通过 Next.js 代理） | `/api/v1` |
+| `BACKEND_PORT` | | 后端外部端口 | `8080` |
 | `FRONTEND_PORT` | | 前端外部端口 | `3000` |
 | `POSTGRES_PORT` | | 数据库外部端口 | `5432` |
+| `ADMIN_USERNAME` | | 管理员用户名 | `admin` |
+| `ADMIN_PASSWORD` | | 管理员密码 | `admin123` |
 | `RUST_LOG` | | 日志级别 | `warn` |
 | `SERVER_MAX_BODY_SIZE_MB` | | 上传文件大小限制(MB) | `50` |
 
@@ -209,6 +185,7 @@ stellux/
 │   │   ├── app/            # 页面路由 (App Router)
 │   │   ├── components/     # UI 组件
 │   │   └── lib/            # 工具库
+│   ├── next.config.ts      # Next.js 配置（含 API 代理）
 │   └── Dockerfile
 ├── flutter/                 # Flutter 多端
 ├── docker-compose.prod.yml  # 生产环境部署

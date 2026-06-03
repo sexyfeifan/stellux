@@ -11,7 +11,7 @@ RUN npm install
 COPY . .
 
 # Build-time API URL (must be set at build for NEXT_PUBLIC_ vars)
-ARG NEXT_PUBLIC_API_URL=http://localhost:8088/api/v1
+ARG NEXT_PUBLIC_API_URL=/api/v1
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Build the application

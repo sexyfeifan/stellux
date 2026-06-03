@@ -139,7 +139,7 @@ services:
         - "host.docker.internal:host-gateway"
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8088/api/v1}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
       dockerfile: Dockerfile
     container_name: stellux-frontend
     restart: always
@@ -148,7 +148,7 @@ services:
     environment:
       NODE_ENV: production
       INTERNAL_API_URL: http://backend:8088/api/v1
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8088/api/v1}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
       HTTP_PROXY: ""
       HTTPS_PROXY: ""
       http_proxy: ""

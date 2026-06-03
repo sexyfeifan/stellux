@@ -4,6 +4,16 @@ const nextConfig: NextConfig = {
   // Enable standalone output for Docker deployment
   output: 'standalone',
 
+  // Proxy API requests to backend container
+  async rewrites() {
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: 'http://backend:8088/api/v1/:path*',
+      },
+    ];
+  },
+
   images: {
     // Enable modern image formats for better compression
     formats: ['image/avif', 'image/webp'],
