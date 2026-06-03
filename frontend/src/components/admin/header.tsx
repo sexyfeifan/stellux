@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { LogOut, User } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -21,6 +22,7 @@ interface HeaderProps {
 
 export function Header({ sidebarCollapsed }: HeaderProps) {
     const { user, logout } = useAuth();
+    const router = useRouter();
 
     return (
         <header
@@ -59,7 +61,7 @@ export function Header({ sidebarCollapsed }: HeaderProps) {
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="cursor-pointer">
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => router.push("/admin/settings") }>
                             <User className="mr-2 h-4 w-4" />
                             <span>个人设置</span>
                         </DropdownMenuItem>
