@@ -1,28 +1,28 @@
-# Production Docker Compose - Standalone
-# Usage: 
+# Stellux - Production Docker Compose
+# Usage:
 #   cp .env.example .env && vim .env
 #   docker compose -f docker-compose.prod.yml up -d
 
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: blog-postgres
+    container_name: stellux-postgres
     restart: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-blog}
-      POSTGRES_USER: ${POSTGRES_USER:-bloguser}
+      POSTGRES_DB: ${POSTGRES_DB:-stellux}
+      POSTGRES_USER: ${POSTGRES_USER:-stellux}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bloguser} -d ${POSTGRES_DB:-blog}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stellux} -d ${POSTGRES_DB:-stellux}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - blog-network
+      - stellux-network
     deploy:
       resources:
         limits:
@@ -32,7 +32,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: blog-redis
+    container_name: stellux-redis
     restart: always
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
@@ -43,7 +43,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - blog-network
+      - stellux-network
     deploy:
       resources:
         limits:
@@ -53,10 +53,10 @@ services:
 
   rustfs:
     image: rustfs/rustfs:latest
-    container_name: blog-rustfs
+    container_name: stellux-rustfs
     restart: always
     environment:
-      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-stelluxadmin}
       RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?RUSTFS_SECRET_KEY is required}
     volumes:
       - rustfs_data:/data
@@ -70,7 +70,7 @@ services:
       timeout: 10s
       retries: 3
     networks:
-      - blog-network
+      - stellux-network
     deploy:
       resources:
         limits:
@@ -79,13 +79,13 @@ services:
           memory: 256M
 
   backend:
-    image: ${BACKEND_IMAGE:-sexyfeifan/blog-backend:latest}
+    image: ${BACKEND_IMAGE:-ghcr.io/sexyfeifan/stellux-backend:latest}
     build:
       extra_hosts:
         - "host.docker.internal:host-gateway"
       context: ./backend
       dockerfile: Dockerfile
-    container_name: blog-backend
+    container_name: stellux-backend
     restart: always
     ports:
       - "${BACKEND_PORT:-8088}:8088"
@@ -93,7 +93,7 @@ services:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: ${SERVER_PORT:-8088}
       SERVER_MAX_BODY_SIZE_MB: ${SERVER_MAX_BODY_SIZE_MB:-50}
-      DATABASE_URL: postgres://${POSTGRES_USER:-bloguser}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-blog}
+      DATABASE_URL: postgres://${POSTGRES_USER:-stellux}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-stellux}
       DATABASE_MAX_CONNECTIONS: ${DATABASE_MAX_CONNECTIONS:-25}
       DATABASE_MIN_CONNECTIONS: ${DATABASE_MIN_CONNECTIONS:-3}
       DATABASE_ACQUIRE_TIMEOUT_SECS: ${DATABASE_ACQUIRE_TIMEOUT_SECS:-10}
@@ -118,7 +118,7 @@ services:
       rustfs:
         condition: service_healthy
     networks:
-      - blog-network
+      - stellux-network
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8088/api/v1/health || exit 1"]
       interval: 30s
@@ -133,7 +133,7 @@ services:
           memory: 64M
 
   frontend:
-    image: ${FRONTEND_IMAGE:-sexyfeifan/blog-frontend:latest}
+    image: ${FRONTEND_IMAGE:-ghcr.io/sexyfeifan/stellux-frontend:latest}
     build:
       extra_hosts:
         - "host.docker.internal:host-gateway"
@@ -141,7 +141,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8088/api/v1}
       dockerfile: Dockerfile
-    container_name: blog-frontend
+    container_name: stellux-frontend
     restart: always
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
@@ -158,7 +158,7 @@ services:
     depends_on:
       - backend
     networks:
-      - blog-network
+      - stellux-network
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1"]
       interval: 30s
@@ -173,7 +173,7 @@ services:
           memory: 128M
 
 networks:
-  blog-network:
+  stellux-network:
     driver: bridge
 
 volumes:

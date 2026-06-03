@@ -1,5 +1,5 @@
 [package]
-name = "blog-backend"
+name = "stellux-backend"
 version = "0.1.0"
 edition = "2021"
 authors = ["Blog System"]
@@ -63,7 +63,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 validator = { version = "0.20", features = ["derive"] }
 
 [[bin]]
-name = "blog-backend"
+name = "stellux-backend"
 path = "src/main.rs"
 
 [dev-dependencies]
